@@ -1,0 +1,45 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+.env
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+# database files
+*.sqlite3
+*.db
+
+# scripts and logs
+*.log
+*.out
+*.err
+app/scripts/*# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+.env
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+# database files
+*.sqlite3
+*.db
+
+# scripts and logs
+*.log
+*.out
+*.err
+app/scripts/*
