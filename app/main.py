@@ -23,10 +23,27 @@ import uvicorn
 load_dotenv()
 FRONTEND_URL = os.getenv("FRONTEND_URL")
 APP_ENV = os.getenv("APP_ENV", "dev")
-CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000").split(",")
 
-# Clean up any empty strings from split
-CORS_ORIGINS = [origin.strip() for origin in CORS_ORIGINS if origin.strip()]
+# Define allowed origins
+origins = [
+    "https://speedx-eta.vercel.app",  # Production frontend
+    "http://localhost:3000",          # Local development
+    "http://127.0.0.1:3000"          # Local development alternative
+]
+
+# Add FRONTEND_URL if it's set and not already in the list
+if FRONTEND_URL and FRONTEND_URL not in origins:
+    origins.append(FRONTEND_URL)
+
+# Add any additional CORS origins from environment variable
+CORS_ORIGINS = os.getenv("CORS_ORIGINS", "").split(",")
+for origin in CORS_ORIGINS:
+    origin = origin.strip()
+    if origin and origin not in origins:
+        origins.append(origin)
+
+# Log the allowed origins for debugging
+logger.info(f"CORS allowed origins: {origins}")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -48,26 +65,9 @@ app = FastAPI(
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
-# Configuration CORS dynamique selon l'environnement
-if APP_ENV == "prod":
-    allowed_origins = CORS_ORIGINS.copy()
-    # Always include the frontend URL if it's set
-    if FRONTEND_URL and FRONTEND_URL not in allowed_origins:
-        allowed_origins.append(FRONTEND_URL)
-    
-    # Log the allowed origins for debugging
-    logger.info(f"Production CORS allowed origins: {allowed_origins}")
-else:
-    # Development environment - allow localhost
-    allowed_origins = ["http://localhost:3000", "http://127.0.0.1:3000"]
-    if FRONTEND_URL and FRONTEND_URL not in allowed_origins:
-        allowed_origins.append(FRONTEND_URL)
-    
-    logger.info(f"Development CORS allowed origins: {allowed_origins}")
-
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=allowed_origins,
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
