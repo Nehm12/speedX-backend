@@ -20,6 +20,8 @@ from app.utils.logs import logger
 
 load_dotenv()
 FRONTEND_URL = os.getenv("FRONTEND_URL")
+APP_ENV = os.getenv("APP_ENV", "dev")
+CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000").split(",")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -33,16 +35,22 @@ app = FastAPI(
     title="SpeedX API - Extracteur de Relevés Bancaires",
     description="API pour l'extraction automatique de données à partir de relevés bancaires PDF",
     version="1.0.0",
-    lifespan=lifespan
+    lifespan=lifespan,
+    docs_url="/docs" if APP_ENV == "dev" else None,
+    redoc_url="/redoc" if APP_ENV == "dev" else None
 )
 
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
-# Configuration CORS for React frontend
+# Configuration CORS dynamique selon l'environnement
+allowed_origins = CORS_ORIGINS if APP_ENV == "prod" else ["http://localhost:3000", "http://127.0.0.1:3000"]
+if FRONTEND_URL and FRONTEND_URL not in allowed_origins:
+    allowed_origins.append(FRONTEND_URL)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000", FRONTEND_URL],  # React dev server
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
