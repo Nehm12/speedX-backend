@@ -34,9 +34,9 @@
 
 #### D. Variables d'environnement à configurer dans Render
 ```
-DATABASE_URL=postgresql://speedx_user:password@hostname:port/speedx
+DATABASE_URL=
 SECRET_KEY=your_generated_secret_key
-GOOGLE_API_KEY=AIzaSyBqeykrjFZmFB9_zqxd41j7cb2FHur8dXg
+GOOGLE_API_KEY=
 FRONTEND_URL=https://your-speedx-frontend.vercel.app
 BACKEND_URL=https://speedx-backend.onrender.com
 APP_ENV=prod

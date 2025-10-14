@@ -17,6 +17,8 @@ from app.routes.auth import router as auth_router
 from app.routes.api import router as api_router
 from app.database import create_db_and_tables, get_async_session
 from app.utils.logs import logger
+import uvicorn
+
 
 load_dotenv()
 FRONTEND_URL = os.getenv("FRONTEND_URL")
@@ -74,3 +76,9 @@ async def health_check(session: AsyncSession = Depends(get_async_session)):
     except Exception:
         raise HTTPException(503, "Database unreachable")
     return {"status": "healthy"}
+
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 8000))  # Render définit $PORT automatiquement
+    uvicorn.run("app.main:app", host="0.0.0.0", port=port)
+
