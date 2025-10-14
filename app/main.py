@@ -25,6 +25,9 @@ FRONTEND_URL = os.getenv("FRONTEND_URL")
 APP_ENV = os.getenv("APP_ENV", "dev")
 CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000").split(",")
 
+# Clean up any empty strings from split
+CORS_ORIGINS = [origin.strip() for origin in CORS_ORIGINS if origin.strip()]
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await create_db_and_tables()
@@ -46,9 +49,21 @@ app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # Configuration CORS dynamique selon l'environnement
-allowed_origins = CORS_ORIGINS if APP_ENV == "prod" else ["http://localhost:3000", "http://127.0.0.1:3000"]
-if FRONTEND_URL and FRONTEND_URL not in allowed_origins:
-    allowed_origins.append(FRONTEND_URL)
+if APP_ENV == "prod":
+    allowed_origins = CORS_ORIGINS.copy()
+    # Always include the frontend URL if it's set
+    if FRONTEND_URL and FRONTEND_URL not in allowed_origins:
+        allowed_origins.append(FRONTEND_URL)
+    
+    # Log the allowed origins for debugging
+    logger.info(f"Production CORS allowed origins: {allowed_origins}")
+else:
+    # Development environment - allow localhost
+    allowed_origins = ["http://localhost:3000", "http://127.0.0.1:3000"]
+    if FRONTEND_URL and FRONTEND_URL not in allowed_origins:
+        allowed_origins.append(FRONTEND_URL)
+    
+    logger.info(f"Development CORS allowed origins: {allowed_origins}")
 
 app.add_middleware(
     CORSMiddleware,
