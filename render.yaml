@@ -16,7 +16,7 @@ services:
       - key: GOOGLE_API_KEY
         sync: false
       - key: FRONTEND_URL
-        value: https://speedx-frontend.vercel.app
+        value: https://speedx-eta.vercel.app
       - key: BACKEND_URL
         value: https://speedx-backend-v1ol.onrender.com
       - key: APP_ENV
@@ -26,7 +26,7 @@ services:
       - key: RATE_LIMIT
         value: 10/minute
       - key: CORS_ORIGINS
-        value: https://speedx-frontend.vercel.app
+        value: https://speedx-eta.vercel.app
 
 databases:
   - name: speedx-db
