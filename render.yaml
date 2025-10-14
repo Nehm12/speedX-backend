@@ -11,14 +11,6 @@ services:
         fromDatabase:
           name: speedx-db
           property: connectionString
-      - key: SECRET_KEY
-        generateValue: true
-      - key: GOOGLE_API_KEY
-        sync: false
-      - key: FRONTEND_URL
-        value: https://your-speedx-frontend.vercel.app
-      - key: BACKEND_URL
-        value: https://speedx-backend.onrender.com
       - key: APP_ENV
         value: prod
       - key: LOG_LEVEL
