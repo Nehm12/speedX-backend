@@ -4,14 +4,16 @@ from dotenv import load_dotenv
 
 from fastapi import Depends
 from fastapi_users.db import SQLAlchemyUserDatabase
-from sqlalchemy import text
+from sqlalchemy import text, select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.exc import SQLAlchemyError
+import uuid
 
 from app.models.base import Base
-from app.models.users import User
+from app.models.users import User, UserRole
 from app.models.extraction_job import ExtractionJob
 from app.models.users_consumption import UserUsage
+from app.core.security import get_password_hash
 from app.utils.logs import logger
 
 load_dotenv()
@@ -20,6 +22,73 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 
 engine = create_async_engine(DATABASE_URL)
 async_session_maker = async_sessionmaker(engine, expire_on_commit=False)
+
+
+async def seed_default_users():
+    """Crée les utilisateurs par défaut s'ils n'existent pas déjà"""
+    async with async_session_maker() as session:
+        try:
+            # Vérifier si l'utilisateur admin existe déjà
+            admin_query = select(User).where(User.email == "admin@speedx.com")
+            admin_result = await session.execute(admin_query)
+            existing_admin = admin_result.scalar_one_or_none()
+            
+            # Vérifier si l'utilisateur standard existe déjà
+            user_query = select(User).where(User.email == "user@speedx.com")
+            user_result = await session.execute(user_query)
+            existing_user = user_result.scalar_one_or_none()
+            
+            users_created = []
+            
+            # Créer l'utilisateur admin s'il n'existe pas
+            if not existing_admin:
+                admin_user = User(
+                    id=uuid.uuid4(),
+                    email="admin@speedx.com",
+                    hashed_password=get_password_hash("Admin123!"),
+                    first_name="Admin",
+                    last_name="SpeedX",
+                    role=UserRole.ADMIN,
+                    is_active=True,
+                    is_superuser=True,
+                    is_verified=True
+                )
+                session.add(admin_user)
+                users_created.append("admin@speedx.com")
+                logger.info("Utilisateur admin créé")
+            else:
+                logger.info("Utilisateur admin existe déjà")
+            
+            # Créer l'utilisateur standard s'il n'existe pas
+            if not existing_user:
+                standard_user = User(
+                    id=uuid.uuid4(),
+                    email="user@speedx.com",
+                    hashed_password=get_password_hash("User123!"),
+                    first_name="Utilisateur",
+                    last_name="Standard",
+                    role=UserRole.STANDARD,
+                    is_active=True,
+                    is_superuser=False,
+                    is_verified=True
+                )
+                session.add(standard_user)
+                users_created.append("user@speedx.com")
+                logger.info("Utilisateur standard créé")
+            else:
+                logger.info("Utilisateur standard existe déjà")
+            
+            # Sauvegarder les changements
+            if users_created:
+                await session.commit()
+                logger.info(f"Utilisateurs créés avec succès: {', '.join(users_created)}")
+            else:
+                logger.info("Aucun nouvel utilisateur à créer")
+                
+        except Exception as e:
+            logger.error(f"Erreur lors du seeding des utilisateurs: {e}")
+            await session.rollback()
+            raise
 
 
 async def create_db_and_tables():
@@ -32,6 +101,9 @@ async def create_db_and_tables():
             
             await conn.run_sync(Base.metadata.create_all)
             logger.info("Database tables created successfully")
+            
+        # Seeder les utilisateurs par défaut après la création des tables
+        await seed_default_users()
             
     except SQLAlchemyError as e:
         logger.error(f"Database error during table creation: {e}")
