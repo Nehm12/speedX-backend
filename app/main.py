@@ -21,6 +21,37 @@ import uvicorn
 
 
 load_dotenv()
+
+# Validate required environment variables
+def validate_environment():
+    """Validate that all required environment variables are set"""
+    required_vars = {
+        "DATABASE_URL": os.getenv("DATABASE_URL"),
+        "SECRET_KEY": os.getenv("SECRET_KEY"),
+    }
+    
+    # Make GOOGLE_API_KEY optional for now to allow startup
+    google_api_key = os.getenv("GOOGLE_API_KEY")
+    if not google_api_key:
+        logger.warning("⚠️ GOOGLE_API_KEY is not set - LLM extraction features will not work")
+    
+    missing_vars = [var for var, value in required_vars.items() if not value]
+    
+    if missing_vars:
+        error_msg = f"Missing required environment variables: {', '.join(missing_vars)}"
+        logger.error(error_msg)
+        logger.error("Please set these environment variables before starting the application")
+        raise RuntimeError(error_msg)
+    
+    logger.info("✅ Essential environment variables are set")
+    if google_api_key:
+        logger.info("✅ GOOGLE_API_KEY is set")
+    
+    return True
+
+# Validate environment early
+validate_environment()
+
 FRONTEND_URL = os.getenv("FRONTEND_URL")
 APP_ENV = os.getenv("APP_ENV", "dev")
 
@@ -99,6 +130,16 @@ async def custom_http_exception_handler(request, exc):
     return await http_exception_handler(request, exc)
 
 
+@app.get("/")
+async def root():
+    """Simple root endpoint to verify the application is running"""
+    return {
+        "message": "SpeedX API is running",
+        "status": "healthy",
+        "version": "1.0.0",
+        "environment": APP_ENV
+    }
+
 @app.get("/health")
 async def health_check(session: AsyncSession = Depends(get_async_session)):
     try:
@@ -106,6 +147,15 @@ async def health_check(session: AsyncSession = Depends(get_async_session)):
     except Exception:
         raise HTTPException(503, "Database unreachable")
     return {"status": "healthy"}
+
+@app.get("/health/simple")
+async def simple_health_check():
+    """Simple health check that doesn't require database access"""
+    return {
+        "status": "healthy",
+        "message": "Application is running",
+        "timestamp": "2025-10-15T00:53:39Z"
+    }
 
 
 if __name__ == "__main__":

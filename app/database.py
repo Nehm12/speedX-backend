@@ -107,6 +107,13 @@ async def create_db_and_tables():
     try:
         logger.info("Starting database table creation...")
         
+        # Check if DATABASE_URL is set
+        if not DATABASE_URL:
+            logger.error("DATABASE_URL environment variable is not set!")
+            raise RuntimeError("DATABASE_URL environment variable is required")
+        
+        logger.info(f"Connecting to database: {DATABASE_URL[:30]}...")
+        
         async with engine.begin() as conn:
             result = await conn.execute(text("SELECT 1"))
             logger.info("Database connection successful")
@@ -119,9 +126,13 @@ async def create_db_and_tables():
             
     except SQLAlchemyError as e:
         logger.error(f"Database error during table creation: {e}")
+        logger.error(f"Full error details: {str(e)}")
         raise
     except Exception as e:
         logger.error(f"Unexpected error during table creation: {e}")
+        logger.error(f"Error type: {type(e).__name__}")
+        import traceback
+        logger.error(f"Full traceback: {traceback.format_exc()}")
         raise
 
 
