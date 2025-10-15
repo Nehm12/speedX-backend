@@ -27,8 +27,11 @@ APP_ENV = os.getenv("APP_ENV", "dev")
 # Define allowed origins
 origins = [
     "https://speedx-eta.vercel.app",  # Production frontend
+    "https://speedx-backend-v1ol.onrender.com",  # Production backend
     "http://localhost:3000",          # Local development
-    "http://127.0.0.1:3000"          # Local development alternative
+    "http://127.0.0.1:3000",         # Local development alternative
+    "http://localhost:8000",          # Local backend
+    "http://127.0.0.1:8000"          # Local backend alternative
 ]
 
 # Add FRONTEND_URL if it's set and not already in the list
@@ -69,9 +72,10 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     allow_headers=["*"],
-    expose_headers=["Content-Disposition"]
+    expose_headers=["Content-Disposition"],
+    max_age=600,  # Cache preflight requests for 10 minutes
 )
 
 app.include_router(auth_router, prefix="/api")
