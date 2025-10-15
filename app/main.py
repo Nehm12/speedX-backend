@@ -55,15 +55,13 @@ validate_environment()
 FRONTEND_URL = os.getenv("FRONTEND_URL")
 APP_ENV = os.getenv("APP_ENV", "dev")
 
-# Define allowed origins - Configuration CORS plus permissive pour debug
+# Define allowed origins - Configuration CORS pour l'authentification par cookies
 origins = [
     "https://speedx-eta.vercel.app",  # Production frontend
-    "https://speedx-backend-v1ol.onrender.com",  # Production backend
     "http://localhost:3000",          # Local development
     "http://127.0.0.1:3000",         # Local development alternative
     "http://localhost:8000",          # Local backend
     "http://127.0.0.1:8000",         # Local backend alternative
-    "*"  # Temporairement permissif pour debug
 ]
 
 # Add FRONTEND_URL if it's set and not already in the list
@@ -74,7 +72,7 @@ if FRONTEND_URL and FRONTEND_URL not in origins:
 CORS_ORIGINS = os.getenv("CORS_ORIGINS", "").split(",")
 for origin in CORS_ORIGINS:
     origin = origin.strip()
-    if origin and origin not in origins:
+    if origin and origin not in origins and origin != "*":
         origins.append(origin)
 
 # Log the allowed origins for debugging

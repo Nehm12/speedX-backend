@@ -30,21 +30,14 @@ async def seed_default_users():
     
     async with async_session_maker() as session:
         try:
-            # Vérifier si l'utilisateur admin existe déjà
+            users_created = []
+            
+            # Créer l'utilisateur admin s'il n'existe pas
             logger.info("Vérification de l'existence de l'utilisateur admin...")
             admin_query = select(User).where(User.email == "admin@speedx.com")
             admin_result = await session.execute(admin_query)
             existing_admin = admin_result.scalar_one_or_none()
             
-            # Vérifier si l'utilisateur standard existe déjà
-            logger.info("Vérification de l'existence de l'utilisateur standard...")
-            user_query = select(User).where(User.email == "user@speedx.com")
-            user_result = await session.execute(user_query)
-            existing_user = user_result.scalar_one_or_none()
-            
-            users_created = []
-            
-            # Créer l'utilisateur admin s'il n'existe pas
             if not existing_admin:
                 logger.info("Création de l'utilisateur admin en cours...")
                 admin_user = User(
@@ -59,12 +52,18 @@ async def seed_default_users():
                     is_verified=True
                 )
                 session.add(admin_user)
+                await session.commit()  # Commit immediately
                 users_created.append("admin@speedx.com")
-                logger.info("✅ Utilisateur admin préparé pour création")
+                logger.info("✅ Utilisateur admin créé avec succès")
             else:
                 logger.info("ℹ️ Utilisateur admin existe déjà")
             
             # Créer l'utilisateur standard s'il n'existe pas
+            logger.info("Vérification de l'existence de l'utilisateur standard...")
+            user_query = select(User).where(User.email == "user@speedx.com")
+            user_result = await session.execute(user_query)
+            existing_user = user_result.scalar_one_or_none()
+            
             if not existing_user:
                 logger.info("Création de l'utilisateur standard en cours...")
                 standard_user = User(
@@ -79,15 +78,13 @@ async def seed_default_users():
                     is_verified=True
                 )
                 session.add(standard_user)
+                await session.commit()  # Commit immediately
                 users_created.append("user@speedx.com")
-                logger.info("✅ Utilisateur standard préparé pour création")
+                logger.info("✅ Utilisateur standard créé avec succès")
             else:
                 logger.info("ℹ️ Utilisateur standard existe déjà")
             
-            # Sauvegarder les changements
             if users_created:
-                logger.info("Sauvegarde des nouveaux utilisateurs en cours...")
-                await session.commit()
                 logger.info(f"🎉 Utilisateurs créés avec succès: {', '.join(users_created)}")
             else:
                 logger.info("ℹ️ Aucun nouvel utilisateur à créer")
