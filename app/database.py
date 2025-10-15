@@ -26,14 +26,18 @@ async_session_maker = async_sessionmaker(engine, expire_on_commit=False)
 
 async def seed_default_users():
     """Crée les utilisateurs par défaut s'ils n'existent pas déjà"""
+    logger.info("=== DÉBUT DU SEEDING DES UTILISATEURS ===")
+    
     async with async_session_maker() as session:
         try:
             # Vérifier si l'utilisateur admin existe déjà
+            logger.info("Vérification de l'existence de l'utilisateur admin...")
             admin_query = select(User).where(User.email == "admin@speedx.com")
             admin_result = await session.execute(admin_query)
             existing_admin = admin_result.scalar_one_or_none()
             
             # Vérifier si l'utilisateur standard existe déjà
+            logger.info("Vérification de l'existence de l'utilisateur standard...")
             user_query = select(User).where(User.email == "user@speedx.com")
             user_result = await session.execute(user_query)
             existing_user = user_result.scalar_one_or_none()
@@ -42,6 +46,7 @@ async def seed_default_users():
             
             # Créer l'utilisateur admin s'il n'existe pas
             if not existing_admin:
+                logger.info("Création de l'utilisateur admin en cours...")
                 admin_user = User(
                     id=uuid.uuid4(),
                     email="admin@speedx.com",
@@ -55,12 +60,13 @@ async def seed_default_users():
                 )
                 session.add(admin_user)
                 users_created.append("admin@speedx.com")
-                logger.info("Utilisateur admin créé")
+                logger.info("✅ Utilisateur admin préparé pour création")
             else:
-                logger.info("Utilisateur admin existe déjà")
+                logger.info("ℹ️ Utilisateur admin existe déjà")
             
             # Créer l'utilisateur standard s'il n'existe pas
             if not existing_user:
+                logger.info("Création de l'utilisateur standard en cours...")
                 standard_user = User(
                     id=uuid.uuid4(),
                     email="user@speedx.com",
@@ -74,19 +80,25 @@ async def seed_default_users():
                 )
                 session.add(standard_user)
                 users_created.append("user@speedx.com")
-                logger.info("Utilisateur standard créé")
+                logger.info("✅ Utilisateur standard préparé pour création")
             else:
-                logger.info("Utilisateur standard existe déjà")
+                logger.info("ℹ️ Utilisateur standard existe déjà")
             
             # Sauvegarder les changements
             if users_created:
+                logger.info("Sauvegarde des nouveaux utilisateurs en cours...")
                 await session.commit()
-                logger.info(f"Utilisateurs créés avec succès: {', '.join(users_created)}")
+                logger.info(f"🎉 Utilisateurs créés avec succès: {', '.join(users_created)}")
             else:
-                logger.info("Aucun nouvel utilisateur à créer")
+                logger.info("ℹ️ Aucun nouvel utilisateur à créer")
+            
+            logger.info("=== FIN DU SEEDING DES UTILISATEURS ===")
                 
         except Exception as e:
-            logger.error(f"Erreur lors du seeding des utilisateurs: {e}")
+            logger.error(f"❌ Erreur lors du seeding des utilisateurs: {e}")
+            logger.error(f"Type d'erreur: {type(e).__name__}")
+            import traceback
+            logger.error(f"Traceback complet: {traceback.format_exc()}")
             await session.rollback()
             raise
 

@@ -51,11 +51,21 @@ logger.info(f"CORS allowed origins: {origins}")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    await create_db_and_tables()
-    logger.info("Application démarrée avec succès")
+    try:
+        logger.info("=== DÉMARRAGE DE L'APPLICATION SPEEDX ===")
+        await create_db_and_tables()
+        logger.info("=== APPLICATION DÉMARRÉE AVEC SUCCÈS ===")
+    except Exception as e:
+        logger.error(f"Erreur lors du démarrage de l'application: {e}")
+        logger.error(f"Type d'erreur: {type(e).__name__}")
+        import traceback
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        # Re-raise l'erreur pour que l'application ne démarre pas en cas de problème
+        raise
+    
     yield
     
-    logger.info("Application fermée")
+    logger.info("=== APPLICATION FERMÉE ===")
 
 app = FastAPI(
     title="SpeedX API - Extracteur de Relevés Bancaires",
