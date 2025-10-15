@@ -20,7 +20,7 @@ load_dotenv()
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 
-engine = create_async_engine(DATABASE_URL)
+engine = create_async_engine(DATABASE_URL, echo=True)
 async_session_maker = async_sessionmaker(engine, expire_on_commit=False)
 
 
@@ -28,19 +28,18 @@ async def seed_default_users():
     """Crée les utilisateurs par défaut s'ils n'existent pas déjà"""
     async with async_session_maker() as session:
         try:
-            # Vérifier si l'utilisateur admin existe déjà
-            admin_query = select(User).where(User.email == "admin@speedx.com")
-            admin_result = await session.execute(admin_query)
+            logger.info("🔍 Vérification des utilisateurs existants...")
+
+            # Vérifier admin
+            admin_result = await session.execute(select(User).where(User.email == "admin@speedx.com"))
             existing_admin = admin_result.scalar_one_or_none()
-            
-            # Vérifier si l'utilisateur standard existe déjà
-            user_query = select(User).where(User.email == "user@speedx.com")
-            user_result = await session.execute(user_query)
+
+            # Vérifier standard
+            user_result = await session.execute(select(User).where(User.email == "user@speedx.com"))
             existing_user = user_result.scalar_one_or_none()
-            
+
             users_created = []
-            
-            # Créer l'utilisateur admin s'il n'existe pas
+
             if not existing_admin:
                 admin_user = User(
                     id=uuid.uuid4(),
@@ -55,11 +54,10 @@ async def seed_default_users():
                 )
                 session.add(admin_user)
                 users_created.append("admin@speedx.com")
-                logger.info("Utilisateur admin créé")
+                logger.info("✅ Utilisateur ADMIN créé")
             else:
-                logger.info("Utilisateur admin existe déjà")
-            
-            # Créer l'utilisateur standard s'il n'existe pas
+                logger.info("ℹ️ Utilisateur ADMIN existe déjà")
+
             if not existing_user:
                 standard_user = User(
                     id=uuid.uuid4(),
@@ -74,45 +72,46 @@ async def seed_default_users():
                 )
                 session.add(standard_user)
                 users_created.append("user@speedx.com")
-                logger.info("Utilisateur standard créé")
+                logger.info("✅ Utilisateur STANDARD créé")
             else:
-                logger.info("Utilisateur standard existe déjà")
-            
-            # Sauvegarder les changements
+                logger.info("ℹ️ Utilisateur STANDARD existe déjà")
+
             if users_created:
                 await session.commit()
-                logger.info(f"Utilisateurs créés avec succès: {', '.join(users_created)}")
+                logger.info(f"🎉 Utilisateurs créés avec succès: {', '.join(users_created)}")
             else:
-                logger.info("Aucun nouvel utilisateur à créer")
-                
+                logger.info("ℹ️ Aucun nouvel utilisateur à créer")
+
         except Exception as e:
-            logger.error(f"Erreur lors du seeding des utilisateurs: {e}")
+            logger.error(f"❌ Erreur lors du seeding des utilisateurs: {e}")
             await session.rollback()
             raise
 
 
 async def create_db_and_tables():
+    """Crée la base et les tables, puis seed les utilisateurs"""
     try:
-        logger.info("Starting database table creation...")
-        
+        logger.info("🚀 Démarrage de la création des tables de la base...")
+
         async with engine.begin() as conn:
-            result = await conn.execute(text("SELECT 1"))
-            logger.info("Database connection successful")
-            
+            await conn.execute(text("SELECT 1"))
+            logger.info("✅ Connexion à la base réussie")
+
             await conn.run_sync(Base.metadata.create_all)
-            logger.info("Database tables created successfully")
-            
-        # Seeder les utilisateurs par défaut après la création des tables
+            logger.info("🎯 Tables créées avec succès")
+
+        # Seed des utilisateurs par défaut
         await seed_default_users()
-            
+
     except SQLAlchemyError as e:
-        logger.error(f"Database error during table creation: {e}")
+        logger.error(f"❌ Erreur SQLAlchemy lors de la création des tables: {e}")
         raise
     except Exception as e:
-        logger.error(f"Unexpected error during table creation: {e}")
+        logger.error(f"❌ Erreur inattendue lors de la création des tables: {e}")
         raise
 
 
+# Générateurs pour dépendances FastAPI
 async def get_async_session() -> AsyncGenerator[AsyncSession, None]:
     async with async_session_maker() as session:
         yield session
@@ -120,3 +119,5 @@ async def get_async_session() -> AsyncGenerator[AsyncSession, None]:
 
 async def get_user_db(session: AsyncSession = Depends(get_async_session)):
     yield SQLAlchemyUserDatabase(session, User)
+
+# Configuration CORS
