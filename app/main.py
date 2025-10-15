@@ -24,14 +24,15 @@ load_dotenv()
 FRONTEND_URL = os.getenv("FRONTEND_URL")
 APP_ENV = os.getenv("APP_ENV", "dev")
 
-# Define allowed origins
+# Define allowed origins - Configuration CORS plus permissive pour debug
 origins = [
     "https://speedx-eta.vercel.app",  # Production frontend
     "https://speedx-backend-v1ol.onrender.com",  # Production backend
     "http://localhost:3000",          # Local development
     "http://127.0.0.1:3000",         # Local development alternative
     "http://localhost:8000",          # Local backend
-    "http://127.0.0.1:8000"          # Local backend alternative
+    "http://127.0.0.1:8000",         # Local backend alternative
+    "*"  # Temporairement permissif pour debug
 ]
 
 # Add FRONTEND_URL if it's set and not already in the list
