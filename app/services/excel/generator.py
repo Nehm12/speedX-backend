@@ -3,7 +3,7 @@ from io import BytesIO
 from typing import Dict, Optional, Union
 from app.utils.logs import logger
 
-
+v = "La modif que t'a demandée"
 code_bank_duplicate = '471000'
 
 def generate_bank_statement_excel(
