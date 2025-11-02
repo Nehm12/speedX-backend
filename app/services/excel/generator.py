@@ -3,6 +3,9 @@ from io import BytesIO
 from typing import Dict, Optional, Union
 from app.utils.logs import logger
 
+
+code_bank_duplicate = '471000'
+
 def generate_bank_statement_excel(
     data: Dict, 
     output_path: Optional[str] = None
@@ -57,6 +60,36 @@ def generate_bank_statement_excel(
             'date', 'document_number', 'bank_code', 'account_number', 
             'description', 'debit', 'credit'
         ])
+
+    # Incrémenter les numéros de pièce de façon robuste
+    if not transactions_df.empty and 'document_number' in transactions_df.columns:
+        # Convertir en numérique (int). Les valeurs non numériques deviennent 0.
+        transactions_df['document_number'] = pd.to_numeric(
+            transactions_df['document_number'], errors='coerce'
+        ).fillna(0).astype(int)
+
+        # Ajouter un offset séquentiel (0, 1, 2, ...) pour chaque ligne
+        transactions_df['document_number'] = (
+            transactions_df['document_number'] + pd.RangeIndex(start=0, stop=len(transactions_df))
+        )
+
+
+    # Dupliquer les lignes en changeant certaines informations
+    if not transactions_df.empty:
+        rows = []
+        # itérate uniquement sur les lignes originales
+        for _, orig in transactions_df.iterrows():
+            original_row = orig.copy()
+            duplicated_row = orig.copy()
+            # modifier les champs du duplicata
+            duplicated_row['bank_code'] = code_bank_duplicate
+            duplicated_row['debit'] = orig.get('credit', 0)
+            duplicated_row['credit'] = orig.get('debit', 0)
+            # ajouter d'abord l'original puis son duplicata
+            rows.append(original_row.to_dict())
+            rows.append(duplicated_row.to_dict())
+        # reconstruire le DataFrame dans l'ordre voulu
+        transactions_df = pd.DataFrame(rows, columns=transactions_df.columns)
     
     # Renomme les colonnes pour un meilleur affichage
     rename_map = {
