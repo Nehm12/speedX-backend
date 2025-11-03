@@ -3,7 +3,7 @@ from io import BytesIO
 from typing import Dict, Optional, Union
 from app.utils.logs import logger
 
-v = "La modif que t'a demandée"
+
 code_bank_duplicate = '471000'
 
 def generate_bank_statement_excel(
@@ -61,17 +61,31 @@ def generate_bank_statement_excel(
             'description', 'debit', 'credit'
         ])
 
-    # Incrémenter les numéros de pièce de façon robuste
+    # Incrémenter les numéros de pièce
     if not transactions_df.empty and 'document_number' in transactions_df.columns:
+        # Conserver la représentation texte originale pour préserver le padding (zéros à gauche)
+        transactions_df['document_number_raw'] = transactions_df['document_number'].astype(str)
+
+        # Détecter les valeurs purement numériques (ex: '0001') et conserver leur largeur
+        is_digits = transactions_df['document_number_raw'].str.match(r'^\d+$', na=False)
+        widths = transactions_df['document_number_raw'].str.len().where(is_digits, other=None)
+
         # Convertir en numérique (int). Les valeurs non numériques deviennent 0.
-        transactions_df['document_number'] = pd.to_numeric(
-            transactions_df['document_number'], errors='coerce'
-        ).fillna(0).astype(int)
+        numeric = pd.to_numeric(transactions_df['document_number'], errors='coerce').fillna(0).astype(int)
 
         # Ajouter un offset séquentiel (0, 1, 2, ...) pour chaque ligne
-        transactions_df['document_number'] = (
-            transactions_df['document_number'] + pd.RangeIndex(start=0, stop=len(transactions_df))
-        )
+        numeric = numeric + pd.RangeIndex(start=0, stop=len(transactions_df))
+
+        # Reformater en chaîne en remettant le padding d'origine quand c'était numérique
+        formatted = numeric.astype(str)
+        # Appliquer le zfill par largeur d'origine uniquement pour les valeurs constituées de chiffres
+        for idx, w in widths.items():
+            if w is not None:
+                formatted.iat[idx] = formatted.iat[idx].zfill(int(w))
+
+        transactions_df['document_number'] = formatted
+        # supprimer la colonne temporaire
+        transactions_df.drop(columns=['document_number_raw'], inplace=True)
 
 
     # Dupliquer les lignes en changeant certaines informations
@@ -95,8 +109,8 @@ def generate_bank_statement_excel(
     rename_map = {
         'date': 'Date',
         'document_number': 'Numéro de pièce',
-        'bank_code': 'Code banque',
-        'account_number': 'Numéro de compte',
+        'bank_code': 'Numéro de banque',
+        'account_number': 'Code banque',
         'description': 'Description',
         'debit': 'Débit',
         'credit': 'Crédit'
