@@ -109,8 +109,8 @@ def generate_bank_statement_excel(
     rename_map = {
         'date': 'Date',
         'document_number': 'Numéro de pièce',
-        'bank_code': 'Numéro de banque',
-        'account_number': 'Code banque',
+        'account_number': 'Numéro de compte',
+        'bank_code': 'Code banque',
         'description': 'Description',
         'debit': 'Débit',
         'credit': 'Crédit'
