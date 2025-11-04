@@ -57,7 +57,7 @@ def generate_bank_statement_excel(
         transactions_df = pd.DataFrame(transactions)
     else:
         transactions_df = pd.DataFrame(columns=[
-            'date', 'document_number', 'bank_code', 'account_number', 
+            'date', 'document_number','account_number', 'bank_code',  
             'description', 'debit', 'credit'
         ])
 
@@ -96,7 +96,7 @@ def generate_bank_statement_excel(
             original_row = orig.copy()
             duplicated_row = orig.copy()
             # modifier les champs du duplicata
-            duplicated_row['bank_code'] = code_bank_duplicate
+            duplicated_row['account_number'] = code_bank_duplicate
             duplicated_row['debit'] = orig.get('credit', 0)
             duplicated_row['credit'] = orig.get('debit', 0)
             # ajouter d'abord l'original puis son duplicata
@@ -140,6 +140,22 @@ def generate_bank_statement_excel(
             pd.DataFrame([total_credit_row])
         ], ignore_index=True)
     
+    # Réordonner les colonnes : Date, Numéro de pièce, Numéro de compte, Code banque, Description, Débit, Crédit
+    cols_order = [
+    'Date',
+    'Numéro de pièce',
+    'Numéro de compte',
+    'Code banque',
+    'Description',
+    'Débit',
+    'Crédit'
+    ]
+
+    # Garder seulement les colonnes existantes pour éviter les erreurs
+    transactions_df = transactions_df[[c for c in cols_order if c in transactions_df.columns]]
+
+
+
     transactions_df.to_excel(writer, sheet_name='Transactions', index=False)
     
     # Formate les colonnes avec openpyxl
